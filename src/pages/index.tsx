@@ -1,5 +1,6 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
+import { useEffect, useState } from "react";
 
 /**
   Calculates the time difference between the server time and client time.
@@ -7,11 +8,51 @@ import { useRouter } from "next/router";
   @param {Date} clientTime - The client time.
   @returns {string} The time difference in the format "{days} days, {hours} hours, {minutes} minutes, {seconds} seconds".
 */
-const calculateTimeDifference = (server: Date, client: Date) => {};
+
+const TimeDifference = (server: Date, client: Date) => {
+  const timeDifference = server.getTime() - client.getTime();
+
+  const days = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+  const hours = Math.floor(
+    (timeDifference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+  );
+  const minutes = Math.floor((timeDifference % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeDifference % (1000 * 60)) / 1000);
+
+  return `${days} days, ${hours} hours, ${minutes} minutes, ${seconds} seconds`;
+};
 
 
 export default function Home() {
   const router = useRouter();
+  const [timeServer,setTimeServer] = useState<Date>(new Date);
+  const [navTime,setNavTime] = useState<Date>();
+  const [timeDifference, setTimeDifference] = useState("");
+
+  useEffect(() => {
+    const fetchServerTime = async () => {
+      try {
+        const response = await fetch("/api/server-time");
+        const data = await response.json();
+        const { serverTime } = data;
+        setTimeServer(new Date(serverTime));
+      } catch (error) {
+        console.error("Error fetching server time:", error);
+      }
+    };
+
+    setNavTime(new Date());
+
+    fetchServerTime();
+  }, []);
+  
+  useEffect(() => {
+    if (timeServer && navTime) {
+      const difference = TimeDifference(timeServer, navTime);
+      setTimeDifference(difference);
+    }
+  }, [timeServer, navTime]);
+
   const moveToTaskManager = () => {
     router.push("/tasks");
   }
@@ -26,16 +67,16 @@ export default function Home() {
       <main>
         <h1>The easiest exam you will ever find</h1>
         <div>
-          {/* Display here the server time (DD-MM-AAAA HH:mm)*/}
+          {/*server time (DD-MM-AAAA HH:mm)*/}
           <p>
             Server time:{" "}
-            <span className="serverTime">{/* Replace with the value */}</span>
+            <span className="serverTime">{timeServer ? timeServer.toLocaleString("fr-FR") : ""}</span>
           </p>
 
-          {/* Display here the time difference between the server side and the client side */}
+          {/*time difference between the server side and the client side */}
           <p>
             Time diff:{" "}
-            <span className="serverTime">{/* Replace with the value */}</span>
+            <span className="serverTime">{timeDifference ? timeDifference:"-"}</span>
           </p>
         </div>
 
